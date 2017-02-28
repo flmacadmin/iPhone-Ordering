@@ -1,25 +1,84 @@
 # iPhone Ordering
 
-## What were we trying to solve?
+A Tkinter GUI that displays menu selections for iPhones.
 
-It was decided that the entire Support department at JAMF Software would be moved off of desk phones and over to iPhones. We wanted to come up with an easy way for our users to order one of the supported options, while also providing all the information we would need to port the number and ship the new phone. What we came up with is a small GUI ordering tool launched from Self Service that submitted the user's order as an IT ticket.
+![Screenshot](/images/demo.gif)
 
-## What does it do?
+## Use
 
-The GUI is a Python script (Python version 2.7.6 tested) with API credentials for Zendesk passed as parameters. The username for who is logged into Self Service is used to generate a ticket on their behalf. This ordering tool contains all of the displayed images as embedded blobs of base64 data (meaning the whole app is delivered all at once). When a user clicks on an iPhone model and color, it changes the displayed picture to match. Once they click submit all of the selected options are put into the body of the ticket form and then sent to Zendesk.
+At Jamf, staff use this script to select iPhones for IT to purchase on the corporate wireless account. Our version of this script generates a Service Desk ticket from the collected options using a service account's credentials passed as parameters in the Self Service policy *($4 and $5 respectively)*.
 
-![Screenshot](/images/iPhoneOrderingApp.gif)
+If you wish to use this script within your organization you may copy the contents and customize it to work in your environment following the guide below.
 
-## How to deploy this script in a policy
+> **This script has no external dependencies and has been tested on macOS 10.10+.**
 
-Upload the script to your JSS and create a policy. The #4 and #5 parameters should be a Zendesk admin account's email address and API token. We set this policy to run once per computer when we deployed it to our staff (in some cases people would cancel out and require us to flush the policy log for their Mac). This script has been tested against 10.9 and 10.10 clients.
+## Customization
+
+The object `MODEL_OPTIONS` defines the contents of the GUI when it loads.
+
+For each `model` of iPhone you can define the `color` and `storage size` options that are available in the drop-downs. Each model in this object will be a menu option in the GUI that will update the color and storage menus when selected.
+
+> *The URLs currently in the script that link to Dropbox are not guaranteed to work - you are encouraged to use your own hosting options for these images!*
+
+The following syntax shows how to define each model.
+
+```pyton
+{
+    '<model name>': {
+        'storage': [16],  # Array of integers for allowed sizes
+        'colors': {
+            '<color name>': {
+                'image_url': 'https://url_to_image.gif'
+            }
+        }
+     }
+}
+```
+
+Multiple `colors` can be defined for each `model`. Each `color` needs an image available at a reachable URL to load. The images must meet the following specifications:
+
+* GIF Format (Tkinter only supports this format by default)
+* 300 × 355 pixels
+* Background color #F0F0F0 (Tkinter does not render transparency)
+
+Below `MODEL_OPTIONS` there is a `create_ticket()` function where you will write the code to handle passing the user's selections into your ticketing system. The following data will be available to generate the ticket's contents from:
+
+* `request_type`
+* `model_name`
+* `model_color`
+* `model_storage`
+
+A global variable named `LOGGED_IN_USER` is available to obtain the username of who is running the script. When run from Self Service, this variable can be one of two values:
+
+1. Self Service requires authentication - it will be the authenticated username, or
+2. Self Service does not require authentication - it will be the username of the local Mac user account.
+
+## Testing
+
+To run this script locally, type the path to the system's Python interpreter and **pass three values after the filename** to fill in the needed parameters *(the script uses $3 to obtain the username)*:
+
+```
+~$ /usr/bin/python iPhone-Ordering.py 1 2 username
+```
+
+The script will log the user's actions in the GUI as it runs and print the selected information at the end:
+
+```
+Starting app
+Downloading photo for: iPhone 6s Space Gray
+Setting new displayed photo
+Creating ticket...
+a new device, iPhone 6s, Space Gray, 32 GB, bryson.tyrrell
+Successfully created help ticket
+~$
+```
 
 ## License
 
 ```
-JAMF Software Standard License
+Jamf Standard License
 
-Copyright (c) 2015, JAMF Software, LLC. All rights reserved.
+Copyright (c) 2017, Jamf All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted
 provided that the following conditions are met:
